@@ -1,6 +1,8 @@
 package game;
 
 import javafx.application.Platform;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,6 +12,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -18,7 +22,8 @@ import java.util.ResourceBundle;
 
 public class ExerciseController implements Runnable, Initializable{
 
-    //Typing thread
+    private Stage primaryStage;
+
     private Thread exerciseThread;
 
     @FXML private TextField exerciseText;
@@ -28,10 +33,12 @@ public class ExerciseController implements Runnable, Initializable{
 
     @FXML private Label readyOne;
     @FXML private Label readyTwo;
-    private Label[] ready = {readyOne, readyTwo};
 
     //Check if exercise is over
     private boolean running;
+
+    //Holds index for which number to display in countdown
+    private int indexTemp;
 
     //Booleans for checking if fingers are on keyboard
     public static boolean a = false;
@@ -48,14 +55,13 @@ public class ExerciseController implements Runnable, Initializable{
     private int intervalStartTime;
 
     public ExerciseController() {
-        //Initialize
-        exerciseThread = new Thread(this, "Exercise Thread");
-
         running = true;
 
     }//end controller ExerciseController
 
     public void initialize(URL url, ResourceBundle rb)  {
+        //Typing thread
+        exerciseThread = new Thread(this, "Exercise Thread");
         exerciseThread.start();
 
     }//end initialize()
@@ -65,15 +71,16 @@ public class ExerciseController implements Runnable, Initializable{
         exerciseText.setText("Please hold down keys" + " before starting.");
 
         try {
-            while(running) {
-                if(checkKeyPressed())
-                    startType();
+            startType();
+
+            while (running) {
+                checkKeyPressed();
 
                 exerciseThread.sleep(100);
 
             }
 
-        }catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
 
         }
@@ -90,31 +97,44 @@ public class ExerciseController implements Runnable, Initializable{
 
     //Only run at start
     private void startType() {
-        Platform.runLater(() -> {
-            //Countdown
-            for(int i = 3; i > 0; i--) {
-                //System.out.println(i);
-                for(int j = 0; j < 2; j++) {
-                    ready[j].setText(String.valueOf(i));
+            try {
+                //Countdown
+                for(int i = 3; i > 0; i--) {
+                    indexTemp = i;
 
-                }
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            readyOne.setText(String.valueOf(indexTemp));
+                            readyTwo.setText(String.valueOf(indexTemp));
 
-                //Wait 1 second
-                try {
+                        }
+                    });
+
+                    //Wait 1 sec
                     exerciseThread.sleep(1000);
 
-                }catch(Exception e) {
-                    e.printStackTrace();
-
                 }
 
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        readyOne.setLayoutX(25);
+                        readyOne.setFont(Font.font("Regular", FontWeight.BLACK, 36));
+                        readyOne.setText("Start");
+
+                        readyTwo.setLayoutX(25);
+                        readyTwo.setFont(Font.font("Regular", FontWeight.BLACK, 36));
+                        readyTwo.setText("Start");
+
+                    }
+
+                });
+
+            }catch(Exception e) {
+                e.printStackTrace();
+
             }
-
-            //System.out.println("Start");
-            readyOne.setText("Start");
-            readyTwo.setText("Start");
-
-        });
 
     }//end startType
 
