@@ -58,12 +58,12 @@
             </AnchorPane>
             <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="2">
                <children>
-                  <ChoiceBox layoutX="43.0" layoutY="27.0" prefWidth="150.0" />
+                  <ChoiceBox fx:id="choiceHand" layoutX="43.0" layoutY="27.0" prefWidth="150.0" />
                </children>
             </AnchorPane>
             <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
                <children>
-                  <ChoiceBox layoutX="41.0" layoutY="27.0" prefWidth="150.0" />
+                  <ChoiceBox fx:id="choiceFinger" layoutX="41.0" layoutY="27.0" prefWidth="150.0" />
                </children>
             </AnchorPane>
          </children>
