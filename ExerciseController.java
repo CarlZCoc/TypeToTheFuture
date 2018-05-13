@@ -1,8 +1,6 @@
 package game;
 
 import javafx.application.Platform;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,18 +16,25 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class ExerciseController implements Runnable, Initializable{
-
-    private Stage primaryStage;
 
     private Thread exerciseThread;
 
     @FXML private TextField exerciseText;
 
-    @FXML private Label cWPM;
+    //Total WPM variables
     @FXML private Label tWPM;
+    private long intervalStartTime;
+    private int charTyped;
+    private String wordTyped;
+
+    //Current WPM variables
+    @FXML private Label cWPM;
+    private long startTime;
+    private int intervalCharTyped;
+    private String intervalWordTyped;
 
     @FXML private Label readyOne;
     @FXML private Label readyTwo;
@@ -41,18 +46,22 @@ public class ExerciseController implements Runnable, Initializable{
     private int indexTemp;
 
     //Booleans for checking if fingers are on keyboard
-    public static boolean a = false;
-    public static boolean s = false;
-    public static boolean d = false;
-    public static boolean f = false;
-    public static boolean j = false;
-    public static boolean k = false;
-    public static boolean l = false;
-    public static boolean sC = false;
+    private boolean a = false;
+    private boolean s = false;
+    private boolean d = false;
+    private boolean f = false;
+    private boolean j = false;
+    private boolean k = false;
+    private boolean l = false;
+    private boolean sC = false;
 
-    //Checkpoints for typing speed
-    private int startTime;
-    private int intervalStartTime;
+    //Keys which are too be held
+    private HashMap<String, Boolean> keys = new HashMap<>();
+
+    public static int handIndex;
+    public static int fingerIndex;
+
+    private String paragraph = "Hello my name is Carl. Hello my name is Aaron. Hello my name is Andrew.";
 
     public ExerciseController() {
         running = true;
@@ -60,6 +69,54 @@ public class ExerciseController implements Runnable, Initializable{
     }//end controller ExerciseController
 
     public void initialize(URL url, ResourceBundle rb)  {
+        //Check which key pressed
+        exerciseText.setOnKeyPressed(keyEvent -> {
+            switch (keyEvent.getCode()) {
+                case A:
+                    a = true;
+                case S:
+                    s = true;
+                case D:
+                    d = true;
+                case F:
+                    f = true;
+                case J:
+                    j = true;
+                case K:
+                    k = true;
+                case L:
+                    l = true;
+                case SEMICOLON:
+                    sC = true;
+
+            }
+
+        });
+
+        //Check when key released (Prevent cheating)
+        exerciseText.setOnKeyReleased(keyEvent -> {
+            switch (keyEvent.getCode()) {
+                case A:
+                    a = false;
+                case S:
+                    s = false;
+                case D:
+                    d = false;
+                case F:
+                    f = false;
+                case J:
+                    j = false;
+                case K:
+                    k = false;
+                case L:
+                    l = false;
+                case SEMICOLON:
+                    sC = false;
+
+            }
+
+        });
+
         //Typing thread
         exerciseThread = new Thread(this, "Exercise Thread");
         exerciseThread.start();
@@ -67,16 +124,53 @@ public class ExerciseController implements Runnable, Initializable{
     }//end initialize()
 
     public void run() {
-        //Output instructions
-        exerciseText.setText("Please hold down keys" + " before starting.");
+        //Choose fingers to place on board
+        chooseFingers();
+        //Display instructions
+        String display = "Please hold down keys ";
+
+        Set set = keys.entrySet();
+        Iterator i = set.iterator();
+
+        //Gets name of the keys
+        while(i.hasNext()) {
+            Map.Entry keyName = (Map.Entry)i.next();
+            display += keyName.getKey() + ", ";
+
+        }
+
+        display += " before starting.";
+
+        //Set output display text
+        exerciseText.setText(display);
 
         try {
+            //Countdown
             startType();
 
-            while (running) {
-                checkKeyPressed();
+            //Setting Total WPM values
+            startTime = System.currentTimeMillis();
+            charTyped = 0;
 
-                exerciseThread.sleep(100);
+            //Set Current WPM values
+            intervalStartTime = System.currentTimeMillis();
+            intervalCharTyped = 0;
+
+            while (running) {
+                System.out.println(running);
+                //checkKeyPressed();
+                //if(checkKeyPressed())
+                    //System.out.println("It works!");
+                    updateCurrentWPM();
+
+                    //Reset Current WPM values
+                    intervalStartTime = System.currentTimeMillis();
+                    intervalCharTyped = 0;
+
+                    updateTotalWPM();
+                    typing();
+
+                exerciseThread.sleep(1000);
 
             }
 
@@ -87,15 +181,25 @@ public class ExerciseController implements Runnable, Initializable{
 
     }//end run()
 
-    public boolean checkKeyPressed() {
-        if(a && s && d && f && j && k && l && sC)
-            return true;
+    public void checkKeyPressed() {
+        Set set = keys.entrySet();
+        Iterator i = set.iterator();
 
-        return false;
+        //Gets name of the keys
+        while(i.hasNext()) {
+            Map.Entry keyName = (Map.Entry)i.next();
+            System.out.println((boolean) keyName.getValue());
+            if((boolean) keyName.getValue() != true)
+                    System.out.println(keyName.getKey() + ", " + keyName.getValue());
+                //return false;
+
+        }
+
+        //return true;
 
     }//end checkKeyPressed()
 
-    //Only run at start
+    //Only run at start (Countdown)
     private void startType() {
             try {
                 //Countdown
@@ -138,19 +242,159 @@ public class ExerciseController implements Runnable, Initializable{
 
     }//end startType
 
-    private long updateCurrentWPM() {
-        long timeNow = System.currentTimeMillis();
+    //Select fingers needed to be pressed
+    private void chooseFingers() {
+        switch(handIndex) {
 
-        //Return seconds
-        return (timeNow - intervalStartTime) / 1000;
+            case 0:
+                switch(fingerIndex) {
+
+                    //Left hand, Index
+                    case 0:
+                        keys.put("a", a);
+                        keys.put("s", s);
+                        keys.put("d", d);
+                        break;
+
+                    //Left hand, Middle
+                    case 1:
+                        keys.put("a", a);
+                        keys.put("s", s);
+                        keys.put("f", f);
+                        break;
+
+                    //Left hand, Ring
+                    case 2:
+                        keys.put("a", a);
+                        keys.put("d", d);
+                        keys.put("f", f);
+                        break;
+
+                    //Left hand, Pinkie
+                    case 3:
+                        keys.put("s", s);
+                        keys.put("d", d);
+                        keys.put("f", f);
+                        break;
+
+                }
+                break;
+
+            case 1:
+                switch(fingerIndex) {
+
+                    //Right hand, Index
+                    case 0:
+                        keys.put("k", k);
+                        keys.put("l", l);
+                        keys.put(";", sC);
+                        break;
+
+                    //Right hand, Middle
+                    case 1:
+                        keys.put("j", j);
+                        keys.put("l", l);
+                        keys.put(";", sC);
+                        break;
+
+                    //Right hand, Ring
+                    case 2:
+                        keys.put("j", j);
+                        keys.put("k", k);
+                        keys.put(";", sC);
+                        break;
+
+                    //Right hand, Pinkie
+                    case 3:
+                        keys.put("j", j);
+                        keys.put("k", k);
+                        keys.put("l", l);
+                        break;
+
+                }
+
+                break;
+
+        }
+
+    }//end chooseFingers()
+
+    private void typing() {
+        //Check KeyPressed matches
+        exerciseText.setOnKeyPressed(keyEvent -> {
+            //Set text
+            exerciseText.setText(paragraph);
+
+            if(keyEvent.getText().compareTo(String.valueOf(paragraph.charAt(0))) == 0) {
+                //Update String
+                paragraph = paragraph.substring(1, paragraph.length());
+
+                exerciseText.setText(paragraph);
+                //Increment num of chars typed
+                intervalCharTyped += 1;
+                charTyped += 1;
+
+                //Stop thread
+                if(paragraph.length() == 0) {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            exerciseThread.stop();
+
+                        }
+
+                    });
+                    /*
+                    try {
+                        //exerciseThread.wait();
+
+                    }catch(Exception e) {
+                        e.printStackTrace();
+                    }*/
+
+                }
+
+            }
+
+        });
+
+    }//end typing()
+
+    private void updateCurrentWPM() {
+        long timeNow = System.currentTimeMillis();
+        double seconds = (timeNow - intervalStartTime) / 1000;
+        double minutes = seconds / 60;
+
+        //System.out.println(String.valueOf((int) (intervalCharTyped / minutes)));
+
+        intervalWordTyped = String.valueOf((int) ((intervalCharTyped / 5) / minutes));
+
+        //Update label (Through thread)
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                cWPM.setText(intervalWordTyped);
+
+            }
+        });
 
     }//end updateCurrentWPM()
 
-    private long updateTotalWPM() {
+    private void updateTotalWPM() {
         long timeNow = System.currentTimeMillis();
+        double seconds = (timeNow - startTime) / 1000;
+        double minutes = seconds / 60;
 
-        //Return seconds
-        return (timeNow - startTime) / 1000;
+        wordTyped = String.valueOf((int) ((charTyped / 5) / minutes));
+
+        //Update label (Through thread)
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                tWPM.setText(wordTyped);
+
+            }
+        });
 
     }//end updateTotalWPM
 
