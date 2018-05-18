@@ -50,7 +50,7 @@ public class DestructotypeController implements Runnable, Initializable{
     private Image image = new Image("file:res/Heart.png");
     private ImageView[] lifeImage = new ImageView[3];
     private int lives = 3;
-    private int speed = 1000;
+    private int speed = 3000;
 
     private Label stageLevel = new Label();
     private int stageNum = 1;
@@ -128,7 +128,7 @@ public class DestructotypeController implements Runnable, Initializable{
                     hBox.get(hBox.size() - 1).setAlignment(Pos.CENTER);
                     hBox.get(hBox.size() - 1).getChildren().addAll(text.get(text.size() - 1), text2.get(text2.size() - 1));
 
-                    stack.get(stack.size() - 1).setLayoutX(Math.random() * 600 + 1 - width);
+                    stack.get(stack.size() - 1).setLayoutX(Math.random() * 600 + 1 - width/2);
                     stack.get(stack.size() - 1).setLayoutY(-height/2);
 
                     stack.get(stack.size() - 1).getChildren().addAll(rect.get(rect.size() - 1), hBox.get(hBox.size() - 1));
@@ -178,7 +178,7 @@ public class DestructotypeController implements Runnable, Initializable{
 
                                             //Increase speed
                                             if(speed != 100)
-                                                speed -= 20;
+                                                speed -= 50;
 
                                         }else {
                                             //Increment words
@@ -186,7 +186,8 @@ public class DestructotypeController implements Runnable, Initializable{
 
                                         }
 
-                                        System.out.println(wordsTypedOnStage);
+                                        //Increment score
+                                        score += scoreIncrement;
 
                                     }
 
@@ -195,6 +196,7 @@ public class DestructotypeController implements Runnable, Initializable{
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        //Set score
                                         scoreLabel.setText(String.valueOf(score));
 
                                     }
@@ -211,7 +213,7 @@ public class DestructotypeController implements Runnable, Initializable{
                     for(int i = 0; i < tempStackSize; i++) {
                         Bounds bound2 = rect.get(i).localToScene(rect.get(i).getBoundsInLocal());
 
-                        if(bound.getMinY() >= 400) {
+                        if(bound2.getMinY() >= 400) {
                             System.out.println(bound2.getMinX());
 
                             //Remove the StackPane, Rect, and Text (From scene too)
@@ -230,7 +232,14 @@ public class DestructotypeController implements Runnable, Initializable{
 
                             //Game over
                             if(lives == 0)
-                                destructoThread.stop();
+                                try {
+                                    gameEnd();
+
+                                }catch(IOException e) {
+                                    System.out.println("IO Exception");
+
+                                }
+
 
                         }
 
@@ -295,5 +304,21 @@ public class DestructotypeController implements Runnable, Initializable{
         stage.show();
 
     }//end changeToMinigameSelection(ActionEvent event)
+
+    private void gameEnd() throws IOException {
+        destructoThread.stop();
+
+        Parent root = FXMLLoader.load(getClass().getResource("template/MinigameSelection.fxml"));
+        Scene scene = new Scene(root);
+
+        //Get information from the stage
+        anchor.getScene().getWindow();
+        Stage stage = (Stage) anchor.getScene().getWindow();
+
+        //Update scene on stage
+        stage.setScene(scene);
+        stage.show();
+
+    }
 
 }//end class DestructotypeController
