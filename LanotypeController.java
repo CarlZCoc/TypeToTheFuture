@@ -13,12 +13,14 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextBoundsType;
 import javafx.stage.Stage;
@@ -41,10 +43,12 @@ public class LanotypeController implements Runnable, Initializable{
 
     private String randomChars = "abcdefghijklmnopqrstuvwxyz";
 
-
-    private Image lifeImage;
+    //Lives
+    private Image image = new Image("file:res/Heart.png");
+    private ImageView[] lifeImage = new ImageView[3];
     private int lives = 3;
-    private int speed = 3000;
+
+    private int speed = 1000;
 
     @FXML private Label scoreLabel;
     private int score = 0;
@@ -53,15 +57,24 @@ public class LanotypeController implements Runnable, Initializable{
     //Data for balls
     private int rad = 20;
 
-    //Getting stage
-    //Stage stage = (Stage) grid.getScene().getWindow();
-
     private Thread lanoThread = new Thread(this, "Lanotype Thread");
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         //Set lines to visible
         grid.setGridLinesVisible(true);
+
+        //Set location of images (represent lives)
+        for(int i = 0; i < lifeImage.length; i++) {
+            //Add lives images
+            lifeImage[i] = new ImageView(image);
+            lifeImage[i].setX(0);
+            lifeImage[i].setY(60 * i);
+            lifeImage[i].setFitHeight(50);
+            lifeImage[i].setFitWidth(50);
+            anchor.getChildren().add(lifeImage[i]);
+
+        }
 
         //Start thread
         lanoThread.start();
@@ -78,25 +91,26 @@ public class LanotypeController implements Runnable, Initializable{
                     circle.add(new Circle());
                     text.add(new Text());
 
-                    TranslateTransition transition = new TranslateTransition();
-                    transition.setDuration(Duration.seconds(3));
-                    transition.setToY(600);
-                    transition.setNode(stack.get(stack.size() - 1));
-
                     text.get(text.size() - 1).setText(String.valueOf(randomChars.charAt((int)(Math.random() * randomChars.length()))));
+                    text.get(text.size() - 1).setFont(new Font("Arial", 30));
                     text.get(text.size() - 1).setFill(Color.YELLOW);
                     text.get(text.size() - 1).setBoundsType(TextBoundsType.VISUAL);
 
                     circle.get(circle.size() - 1).setRadius(rad);
                     circle.get(circle.size() - 1).setCenterX(75);
-                    circle.get(circle.size() - 1).setCenterY(-125 - rad);
+                    circle.get(circle.size() - 1).setCenterY(- (rad*2));
                     circle.get(circle.size() - 1).setFill(Color.CHOCOLATE);
 
                     stack.get(stack.size() - 1).setLayoutX(75 - rad + ((int) (Math.random() * 4)) * 150);
-                    stack.get(stack.size() - 1).setLayoutY(-125);
+                    stack.get(stack.size() - 1).setLayoutY(- (rad*2));
 
                     stack.get(stack.size() - 1).getChildren().addAll(circle.get(circle.size() - 1), text.get(text.size() - 1));
                     anchor.getChildren().add(stack.get(stack.size() - 1));
+
+                    TranslateTransition transition = new TranslateTransition();
+                    transition.setDuration(Duration.seconds(3));
+                    transition.setToY(400 + rad * 2);
+                    transition.setNode(stack.get(stack.size() - 1));
 
                     transition.play();
 
@@ -129,6 +143,7 @@ public class LanotypeController implements Runnable, Initializable{
                                 }else if((bound.getMinY() <= 250 && bound.getMaxY() >= 250) || (bound.getMinY() <= 300 && bound.getMaxY() >= 300) && event.getText().compareTo(text.get(i).getText()) == 0) {
                                     //Add to score
                                     score += scoreIncrement;
+                                    score =0;
 
                                     //Remove the StackPane, Circle, and Text (From scene too)
                                     anchor.getChildren().remove(stack.get(i));
@@ -175,6 +190,7 @@ public class LanotypeController implements Runnable, Initializable{
 
                             //Reduce lives
                             lives--;
+                            anchor.getChildren().remove(lifeImage[lives]);
 
                             //Element of list is removed (Decrease i)
                             tempStackSize--;
