@@ -1,5 +1,7 @@
-package game;
+package code.control;
 
+import javafx.animation.ParallelTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -11,14 +13,16 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.net.URL;
@@ -29,6 +33,7 @@ public class CompetitionController implements Runnable, Initializable{
     private Thread competitionThread;
 
     @FXML private AnchorPane anchor;
+    private ImageView background;
 
     @FXML private Label competitionText;
     @FXML private TextField competitionTextfield;
@@ -57,7 +62,27 @@ public class CompetitionController implements Runnable, Initializable{
     //Holds index for which number to display in countdown
     private int indexTemp;
 
-    private String paragraph = "Hello how are you my name is Carl Zhang.Hello how are you my name is Carl Zhang.Hello how are you my name is Carl Zhang.Hello how are you my name is Carl Zhang.Hello how are you my name is Carl Zhang.Hello how are you my name is Carl Zhang.Hello how are you my name is Carl Zhang.";
+    private String paragraph = "Earl of March Secondary School is located somewhere in Canada, Ontario, Ottawa, Kanata, but not on knows where.";
+
+    //Race car animation components
+    @FXML private AnchorPane raceAnchor;
+
+    private ImageView raceBackground;
+    private ImageView raceBackground2;
+    private ImageView finishLine;
+
+    private ImageView userShip = new ImageView(new Image("file:Images/Ships/UserShip.png"));
+    private int userWPM = 90;
+
+    private ImageView[] comShip = new ImageView[3];
+    private int comWPM[] = {0, 0, 0};
+
+    private final int SHIP_WIDTH = 25;
+    private final int SHIP_HEIGHT = 50;
+    private final int SHIP_X = 32;
+    private final int SHIP_Y = 100;
+
+    public static int place;
 
     public void initialize(URL url, ResourceBundle rb)  {
         //Prevent going back and menu when typing
@@ -76,6 +101,56 @@ public class CompetitionController implements Runnable, Initializable{
             }
 
         });
+
+        //Setting background
+        background = new ImageView("file:Images/Backgrounds/competitionBackground.png");
+        background.setX(-126);
+        background.setY(225);
+        background.setFitWidth(600);
+        background.setFitHeight(179);
+        raceAnchor.getChildren().add(background);
+
+        //Set race track background
+        raceBackground = new ImageView(new Image("file:Images/Backgrounds/raceBackground.jpg"));
+        raceBackground.setY(-695);
+        raceBackground.setPreserveRatio(true);
+        raceBackground.setFitWidth(350);
+        raceAnchor.getChildren().add(raceBackground);
+        raceBackground.toBack();
+
+        raceBackground2 = new ImageView(new Image("file:Images/Backgrounds/raceBackground.jpg"));
+        raceBackground2.setY(0);
+        raceBackground2.setPreserveRatio(true);
+        raceBackground2.setFitWidth(350);
+        raceAnchor.getChildren().add(raceBackground2);
+        raceBackground2.toBack();
+
+        finishLine = new ImageView(new Image("file:Images/Backgrounds/finishLine.png"));
+        finishLine.setY(0);
+        finishLine.setPreserveRatio(true);
+        finishLine.setFitWidth(350);
+
+        //Car images
+        userShip.setX(SHIP_X);
+        userShip.setY(SHIP_Y);
+        userShip.setFitWidth(SHIP_WIDTH);
+        userShip.setFitHeight(SHIP_HEIGHT);
+        raceAnchor.getChildren().add(userShip);
+        userShip.toFront();
+
+        for(int i = 0; i < comShip.length; i++) {
+            comShip[i] = new ImageView(new Image("file:Images/Ships/ComShip.png"));
+            comShip[i].setX(SHIP_X + (i + 1) * 86);
+            comShip[i].setY(SHIP_Y);
+            comShip[i].setFitWidth(SHIP_WIDTH);
+            comShip[i].setFitHeight(SHIP_HEIGHT);
+            raceAnchor.getChildren().add(comShip[i]);
+            comShip[i].toFront();
+
+        }
+
+        //Set original place to last
+        place = 4;
 
         //Typing thread
         competitionThread = new Thread(this, "Competition Thread");
@@ -101,6 +176,8 @@ public class CompetitionController implements Runnable, Initializable{
             intervalCharTyped = 0;
 
             while (true) {
+                moveBackground();
+
                 updateCurrentWPM();
 
                 //Reset Current WPM values
@@ -108,9 +185,16 @@ public class CompetitionController implements Runnable, Initializable{
                 intervalCharTyped = 0;
 
                 updateTotalWPM();
+
+                //Check for chars typed
                 typing();
 
+                //Change position of Computers
+                moveCom();
+
+                //Update WPM & CPM every 3 seconds
                 competitionThread.sleep(3000);
+
 
             }
 
@@ -121,7 +205,6 @@ public class CompetitionController implements Runnable, Initializable{
 
     }//end run()
 
-    //Only run at start (Countdown)
     private void startType() {
         try {
             //Countdown
@@ -145,6 +228,7 @@ public class CompetitionController implements Runnable, Initializable{
             Platform.runLater(new Runnable() {
                 @Override
                 public void run() {
+                    //Start
                     readyOne.setLayoutX(25);
                     readyOne.setFont(Font.font("Regular", FontWeight.BLACK, 36));
                     readyOne.setText("Start");
@@ -164,6 +248,25 @@ public class CompetitionController implements Runnable, Initializable{
 
     }//end startType
 
+    private void moveBackground() {
+        TranslateTransition translate = new TranslateTransition();
+        translate.setDuration(Duration.seconds(3));
+        translate.setFromY(0);
+        translate.setToY(695);
+        translate.setNode(raceBackground);
+
+        TranslateTransition translate2 = new TranslateTransition();
+        translate2.setDuration(Duration.seconds(3));
+        translate2.setFromY(0);
+        translate2.setToY(695);
+        translate2.setNode(raceBackground2);
+
+        ParallelTransition parallel = new ParallelTransition(translate, translate2);
+        //parallel.setInterpolator();
+        parallel.play();
+
+    }//end moveBackground()
+
     private void typing() {
         //Check KeyPressed matches
         competitionTextfield.setOnKeyPressed(keyEvent -> {
@@ -180,14 +283,19 @@ public class CompetitionController implements Runnable, Initializable{
                 charTyped += 1;
 
                 //Stop thread
-                if(paragraph.length() == 0)
+                if(paragraph.length() == 0) {
+                    //endRace();
+                    checkPlace();
+
                     try {
-                        changeToCompetitionResults();
+                        changeToCompetitionResult();
 
                     }catch(IOException e) {
                         System.out.println("IO Exception");
 
                     }
+
+                }
 
             }
 
@@ -234,11 +342,76 @@ public class CompetitionController implements Runnable, Initializable{
 
     }//end updateTotalWPM
 
+    private void moveCom() {
+        for(int i = 0; i < comShip.length; i++) {
+            TranslateTransition comTrans = new TranslateTransition();
+            comTrans.setDuration(Duration.seconds(3));
+            comTrans.setToY(wordValue - comWPM[i]);
+            comTrans.setNode(comShip[i]);
+            comTrans.play();
+
+            //comShip[i].setY(userShip.getY() + (wordValue - comWPM[i]));
+
+            comWPM[i] =  userWPM + (int) (Math.random() * 11) - 5;
+
+
+        }
+
+    }
+
+    private void checkPlace() {
+        //Check y value of all ships
+        for(int i = 0; i < comShip.length; i++) {
+            if(wordValue >= comWPM[i]) {
+                place--;
+
+            }
+
+        }
+
+    }//end checkPlace()
+
+    private void endRace() {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                raceAnchor.getChildren().add(finishLine);
+                finishLine.toFront();
+
+            }
+
+        });
+
+
+                /*
+
+                System.out.println(userShip.getY());
+
+                while(userShip.getY() >= 0) {
+                    userShip.setY(userShip.getY() - 1);
+
+                    for(int i = 0; i < comShip.length; i++) {
+                        comShip[i].setY(comShip[i].getY() - 1);
+
+                    }
+
+                    */
+
+        try {
+            competitionThread.sleep(100);
+
+        }catch(InterruptedException e) {
+            System.out.println("Interrupted Exception");
+
+        }
+
+    }//end endRace
+
     @FXML
     private void changeToCompetitionSelection(ActionEvent event) throws IOException {
         competitionThread.stop();
 
-        Parent root = FXMLLoader.load(getClass().getResource("template/CompetitionSelection.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("../FXML/CompetitionSelection.fxml"));
         Scene scene = new Scene(root);
 
         //Get information from the stage
@@ -254,7 +427,7 @@ public class CompetitionController implements Runnable, Initializable{
     private void changeToMenu(ActionEvent event) throws IOException {
         competitionThread.stop();
 
-        Parent root = FXMLLoader.load(getClass().getResource("template/Menu.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("../FXML/MainScreen.fxml"));
         Scene scene = new Scene(root);
 
         //Get information from the stage
@@ -266,10 +439,10 @@ public class CompetitionController implements Runnable, Initializable{
 
     }//end changeToMenu(ActionEvent event) throws IOException
 
-    private void changeToCompetitionResults() throws IOException {
+    private void changeToCompetitionResult() throws IOException {
         competitionThread.stop();
 
-        Parent root = FXMLLoader.load(getClass().getResource("template/CompetitionResult.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("../FXML/CompetitionResult.fxml"));
         Scene scene = new Scene(root);
 
         //Get information from the stage
@@ -279,6 +452,6 @@ public class CompetitionController implements Runnable, Initializable{
         stage.setScene(scene);
         stage.show();
 
-    }//end changeToCompetitionResults(ActionEvent event) throws IOException
+    }//end changeToCompetitionResult(ActionEvent event) throws IOException
 
 }//end class CompetitionController
